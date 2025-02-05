@@ -1,6 +1,6 @@
-﻿namespace MyRecipeBook.Communication.Requests;
+﻿namespace MyRecipeBook.Domain.Entities;
 
-public class RequestRegisterUserJson
+public class User : EntityBase
 {
     public string? Name { get; set; }
     public string? Email { get; set; }
