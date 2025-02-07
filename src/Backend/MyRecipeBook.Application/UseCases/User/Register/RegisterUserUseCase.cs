@@ -7,6 +7,8 @@ using MyRecipeBook.Application.Services.Cryptography;
 using System.Runtime.CompilerServices;
 using MyRecipeBook.Domain.Repositories.User;
 using AutoMapper;
+using MyRecipeBook.Domain.Repositories;
+using MyRecipeBook.Exceptions;
 
 namespace MyRecipeBook.Application.UseCases.User.Register;
 
@@ -16,6 +18,7 @@ public class RegisterUserUseCase : IRegisterUserUseCase
     // Injeção de dependencia
     private readonly IUserWriteOnlyRepository _userWriteOnlyRepository;
     private readonly IUserReadOnlyRepository _userReadOnlyRepository;
+    private readonly IUnityOfWork _unityOfWork;
     private readonly IMapper _mapper;
     private readonly PasswordEncripter _passwordEncripter;
 
@@ -23,20 +26,22 @@ public class RegisterUserUseCase : IRegisterUserUseCase
         IUserWriteOnlyRepository userWriteOnlyRepository, 
         IUserReadOnlyRepository userReadOnlyRepository,
         IMapper mapper,
-        PasswordEncripter passwordEncripter
+        PasswordEncripter passwordEncripter,
+        IUnityOfWork unityOfWork
         )
     {
         _userWriteOnlyRepository = userWriteOnlyRepository;
         _userReadOnlyRepository = userReadOnlyRepository;
         _mapper = mapper;
         _passwordEncripter = passwordEncripter;
+        _unityOfWork = unityOfWork;
     }
 
     public async Task<ResponseRegisteredUserJson> Execute(RequestRegisterUserJson request)
     {
 
         // Validar a request
-        Validate(request);
+        await Validate(request);
 
         // Mapear a request em uma entidade
         /*var autoMapper = new AutoMapper.MapperConfiguration(options => {
@@ -50,6 +55,7 @@ public class RegisterUserUseCase : IRegisterUserUseCase
 
         // Salvar no banco de dados
         await _userWriteOnlyRepository.Add(user);
+        await _unityOfWork.Commit();
 
         return new ResponseRegisteredUserJson
         {
@@ -57,11 +63,17 @@ public class RegisterUserUseCase : IRegisterUserUseCase
         };
     }
 
-    public void Validate(RequestRegisterUserJson request)
+    private async Task Validate(RequestRegisterUserJson request)
     {
         var Validator = new RegisterUserValidator();
 
         var result = Validator.Validate(request);
+
+        var emailExist = await _userReadOnlyRepository.ExistActiveUserWithEmail(request.Email);
+        if(emailExist)
+        {
+            result.Errors.Add(new FluentValidation.Results.ValidationFailure(string.Empty, ResourceMessageException.EMAIL_ALREADY_REGISTERED));
+        }
 
         if(result.IsValid == false)
         {
