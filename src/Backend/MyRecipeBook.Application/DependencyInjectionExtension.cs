@@ -30,6 +30,6 @@ public static class DependencyInjectionExtension
     {
         var additionalKey = configuration.GetValue<string>("Settings:Password:AdditionalKey");
 
-        services.AddScoped(option => new PasswordEncripter(additionalKey));
+        services.AddScoped(option => new PasswordEncripter(additionalKey!));
     }
 }

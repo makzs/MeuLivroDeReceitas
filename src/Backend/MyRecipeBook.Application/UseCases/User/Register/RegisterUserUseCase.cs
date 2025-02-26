@@ -43,11 +43,6 @@ public class RegisterUserUseCase : IRegisterUserUseCase
         // Validar a request
         await Validate(request);
 
-        // Mapear a request em uma entidade
-        /*var autoMapper = new AutoMapper.MapperConfiguration(options => {
-            options.AddProfile(new Automapping());
-        }).CreateMapper();*/
-
         var user = _mapper.Map<Domain.Entities.User>(request);
 
         // Criptografia da senha
@@ -75,7 +70,7 @@ public class RegisterUserUseCase : IRegisterUserUseCase
             result.Errors.Add(new FluentValidation.Results.ValidationFailure(string.Empty, ResourceMessageException.EMAIL_ALREADY_REGISTERED));
         }
 
-        if(result.IsValid == false)
+        if(!result.IsValid)
         {
 
             var errorMessages = result.Errors.Select(e => e.ErrorMessage).ToList();
